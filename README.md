@@ -1,6 +1,6 @@
-<h1>Stego-reloaded</h1>
+<h1>stegoreloaded</h1>
 
-Visible steganography for images.
+Pixel steganography for .png images.
 
 Built with component framework, core configs are editable via repl.
 
