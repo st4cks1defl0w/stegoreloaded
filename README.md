@@ -14,6 +14,6 @@ Encryption
 
 Decryption
 ```
-./stegoreloaded -i /path/to/host/img -d
+./stegoreloaded -i /path/to/host/img -d -p passwordToDecryptMessage
 ```
 
