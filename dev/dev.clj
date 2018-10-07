@@ -12,27 +12,25 @@
    [clojure.tools.namespace.repl :refer [refresh refresh-all clear]]
    [com.stuartsierra.component :as component]
    [com.stuartsierra.component.repl :refer [reset set-init start stop system]]
-   [com.stego.stego-reloaded :as stego]
-  )
-)
+   [com.stego.stego-reloaded :as stego]))
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev" "src" "test")
 
-
-(def replable-configs {:startingimg "lenin.jpeg"
-		       :message "im a hidden bugger"
-		       :password "secretpassword"})
-
+(def replable-configs {:startingimg "hothead.png"
+                       :message "im a hidden bugger"
+                       :password "secretpassword"
+                       :decrypt true})
 
 (defn example-system [config]
-    (component/system-map
-      :loadimg (stego/loadimginit config)
-      :showimg (component/using
-                  (stego/showimginit)
-               [:loadimg])))
+  (component/system-map
+   :loadimg (stego/loadimginit config)
+   :showimg (component/using
+             (stego/showimginit)
+             [:loadimg])))
 
+(set-init (fn [_] (example-system
 
-(set-init (fn [_] (example-system replable-configs)))
+                   replable-configs)))
 
 
 
