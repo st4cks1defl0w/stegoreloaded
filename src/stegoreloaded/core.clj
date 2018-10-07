@@ -6,36 +6,30 @@
    [mikera.image.colours :as imgrgb]
    [buddy.core.crypto :as crypto]
    [buddy.core.nonce :as nonce]
-[clojure.java.io :as io]
+   [clojure.java.io :as io]
    [buddy.core.codecs :as codecs]
    [buddy.core.hash :as hash])
- (:gen-class))
+  (:gen-class))
 
-
-
-    (def iv  (codecs/to-bytes "ivisnotnecessary"))
+(def iv  (codecs/to-bytes "ivisnotnecessary"))
 
 (defn- decryptalgo [encryptedpart password]
-    (def saltedpass (hash/sha256 password))
+  (def saltedpass (hash/sha256 password))
 
-(def convertpixels (->> encryptedpart
-     (map -)
-     (map char)
-     (apply str)))
-(-> (crypto/decrypt (codecs/hex->bytes convertpixels) saltedpass iv {:algorithm :aes128-cbc-hmac-sha256})
-                     (codecs/bytes->str))
-)
-
+  (def convertpixels (->> encryptedpart
+                          (map -)
+                          (map char)
+                          (apply str)))
+  (-> (crypto/decrypt (codecs/hex->bytes convertpixels) saltedpass iv {:algorithm :aes128-cbc-hmac-sha256})
+      (codecs/bytes->str)))
 
 (defn decryptimg [componentState]
   (let [{:keys [startingimg password]} componentState
         buddyConfig (crypto/block-cipher :twofish :cbc)
-        rawimage (imgcore/load-image-resource startingimg)
+        rawimage (imgcore/load-image startingimg)
         pixels (imgcore/get-pixels rawimage)
         encryptedpart (first (split-with #(not= % -9588211) pixels))]
-(println (decryptalgo encryptedpart password))
-))
-
+    (println (decryptalgo encryptedpart password))))
 
 (defn encryptimg [componentState]
   (let [{:keys [startingimg message password]} componentState
@@ -59,12 +53,14 @@
 
 
 ;;entrypoint component & init fn:::
+
+
 (defrecord LOADCOMP [config]
   component/Lifecycle
   (start [this]
-(if (:decrypt (:config this))
-    (assoc this :processedimg (decryptimg (:config this)))
-    (assoc this :processedimg (encryptimg (:config this)))))
+    (if (:decrypt (:config this))
+      (assoc this :processedimg (decryptimg (:config this)))
+      (assoc this :processedimg (encryptimg (:config this)))))
   (stop [this]
     this))
 
@@ -74,52 +70,54 @@
 
 
 ;;show-image component & init fn
-(defrecord SHOWCOMP []
+
+
+(defrecord SHOWCOMP [config]
   component/Lifecycle
   (start [this]
 ;;rewrite path as comp dependency todo
- (imgcore/save (:processedimg (:loadimg this)) (str (:startingimg (-> this second second first second)) ".enc.png"))
+    (when-not (:decrypt (:config this))
+      (imgcore/save (:processedimg (:loadimg this)) (str (:startingimg (:config this)) ".enc.png")))
     (assoc this :finished true))
   (stop [this]
     this))
 
-(defn showimginit []
-  (map->SHOWCOMP {:triggershow! true}))
+(defn showimginit [config]
+  (map->SHOWCOMP {:config config}))
 
 
 
 
 ;;production configs
+
+
 (defn prod-system [config]
   (component/system-map
    :loadimg (loadimginit config)
    :showimg (component/using
-             (showimginit)
+             (showimginit config)
              [:loadimg])))
-
 
 (def cli-options
   [["-i" "--image Image" "Input image path"]
-   [nil "--decrypt" "Decrypt mode"]
+   ["-d" "--decrypt" "Decrypt mode"]
    ["-m" "--message Message" "Message to encrypt"
     :default "hello"]
    ["-p" "--password Password" "Password used for encryption"
     :default  "nopassword"]
    ["-h" "--help"]])
 
-
 (defn -main [& args]
-(let [{:keys [image decrypt message password]}
-  (:options (parse-opts args cli-options))]
+  (let [{:keys [image decrypt message password]}
+        (:options (parse-opts args cli-options))]
 
-(if image
-(component/start (prod-system {:startingimg image
-                       :message message
-                       :password password
-                       :decrypt decrypt}))
-(println "You have to specify the host .png path with -i /path/to/img")
-)
-)
-)
+    (if image
+      (component/start (prod-system {:startingimg image
+                                     :message message
+                                     :password password
+                                     :decrypt decrypt}))
+      (println
+
+       "You have to specify the host .png path with -i /path/to/img"))))
 
 

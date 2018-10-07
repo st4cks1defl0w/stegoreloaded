@@ -10,7 +10,7 @@
                  [net.mikera/imagez "0.12.0"]
                  [org.clojure/tools.cli "0.4.1"]]
   :main ^:skip-aot stegoreloaded.core
- :aot [stegoreloaded.core]
+ ;;:aot [stegoreloaded.core]
   :target-path "target/%s"
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.11"]
                                   [com.stuartsierra/component.repl "0.2.0"]]
