@@ -1,26 +1,23 @@
 (ns stegoreloaded.core
   (:require
+   [buddy.core.crypto :as crypto]
+   [buddy.core.codecs :as codecs]
+   [buddy.core.hash :as hash]
    [clojure.tools.cli :refer [parse-opts]]
    [com.stuartsierra.component :as component]
-   [mikera.image.core :as imgcore]
-   [mikera.image.colours :as imgrgb]
-   [buddy.core.crypto :as crypto]
-   [buddy.core.nonce :as nonce]
-   [clojure.java.io :as io]
-   [buddy.core.codecs :as codecs]
-   [buddy.core.hash :as hash])
+   [mikera.image.core :as imgcore])
   (:gen-class))
 
-(def iv  (codecs/to-bytes "ivisnotnecessary"))
+(def iv (codecs/to-bytes "ivisnotnecessary"))
 
 (defn- decryptalgo [encryptedpart password]
   (let [saltedpass (hash/sha256 password)
-        convertpixels (->> encryptedpart
-                           (map -)
-                           (map char)
-                           (apply str))]
+        converted-pixels (->> encryptedpart
+                              (map -)
+                              (map char)
+                              (apply str))]
     (-> (crypto/decrypt
-         (codecs/hex->bytes convertpixels)
+         (codecs/hex->bytes converted-pixels)
          saltedpass
          iv
          {:algorithm :aes128-cbc-hmac-sha256})
@@ -28,28 +25,28 @@
 
 (defn decryptimg [componentState]
   (let [{:keys [startingimg password]} componentState
-        buddyConfig (crypto/block-cipher :twofish :cbc)
+        buddy-config (crypto/block-cipher :twofish :cbc)
         rawimage (imgcore/load-image startingimg)
         pixels (imgcore/get-pixels rawimage)
-        encryptedpart (first (split-with #(not= % -9588211) pixels))]
-    (println (decryptalgo encryptedpart password))))
+        encrypted-part (first (split-with #(not= % -9588211) pixels))]
+    (println (decryptalgo encrypted-part password))))
 
 (defn encryptimg [componentState]
   (let [{:keys [startingimg message password]} componentState
-        buddyConfig (crypto/block-cipher :twofish :cbc)
+        buddy-config (crypto/block-cipher :twofish :cbc)
         original-text (codecs/to-bytes message)
-        saltedpass (hash/sha256 password)
-        encryptedhex (codecs/bytes->hex (crypto/encrypt
-                                         original-text saltedpass iv
-                                         {:algorithm :aes128-cbc-hmac-sha256}))
+        salted-pass (hash/sha256 password)
+        encrypted-hex (codecs/bytes->hex (crypto/encrypt
+                                          original-text salted-pass iv
+                                          {:algorithm :aes128-cbc-hmac-sha256}))
         inlenin (imgcore/load-image startingimg)
         pixels (imgcore/get-pixels inlenin)
-        encryptedintegers (map int encryptedhex)
-        pixelstostore (count encryptedintegers)]
+        encrypted-integers (map int encrypted-hex)
+        pixelstostore (count encrypted-integers)]
     (dotimes [i (inc pixelstostore)]
       (if (= i pixelstostore)
         (aset pixels i -9588211)
-        (aset pixels i (- (nth encryptedintegers i)))))
+        (aset pixels i (- (nth encrypted-integers i)))))
     (imgcore/set-pixels inlenin pixels)
     inlenin))
 
