@@ -1,11 +1,10 @@
 (ns stegoreloaded.core
-  (:require
-   [buddy.core.crypto :as crypto]
-   [buddy.core.codecs :as codecs]
-   [buddy.core.hash :as hash]
-   [clojure.tools.cli :refer [parse-opts]]
-   [com.stuartsierra.component :as component]
-   [mikera.image.core :as imgcore])
+  (:require [buddy.core.crypto :as crypto]
+            [buddy.core.codecs :as codecs]
+            [buddy.core.hash :as hash]
+            [clojure.tools.cli :refer [parse-opts]]
+            [com.stuartsierra.component :as component]
+            [mikera.image.core :as imgcore])
   (:gen-class))
 
 (def iv (codecs/to-bytes "ivisnotnecessary"))
