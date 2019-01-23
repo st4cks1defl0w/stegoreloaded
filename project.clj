@@ -3,7 +3,7 @@
   :url "gnu.org"
   :license {:name "GPL"
             :url "https://gnu.org/"}
-  :resource-paths ["resources"] 
+  :resource-paths ["resources"]
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [buddy/buddy-core "1.5.0"]
                  [com.stuartsierra/component "0.3.2"]
@@ -14,7 +14,6 @@
   :target-path "target/%s"
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.11"]
                                   [com.stuartsierra/component.repl "0.2.0"]]
-                   :source-paths ["dev"]}})
-
-
-
+                   :source-paths ["dev"]
+                   :plugins [[lein-bikeshed "0.5.1"]
+                            [lein-cljfmt "0.6.3"]]}})

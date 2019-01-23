@@ -14,14 +14,17 @@
 (def iv  (codecs/to-bytes "ivisnotnecessary"))
 
 (defn- decryptalgo [encryptedpart password]
-  (def saltedpass (hash/sha256 password))
-
-  (def convertpixels (->> encryptedpart
-                          (map -)
-                          (map char)
-                          (apply str)))
-  (-> (crypto/decrypt (codecs/hex->bytes convertpixels) saltedpass iv {:algorithm :aes128-cbc-hmac-sha256})
-      (codecs/bytes->str)))
+  (let [saltedpass (hash/sha256 password)
+        convertpixels (->> encryptedpart
+                           (map -)
+                           (map char)
+                           (apply str))]
+    (-> (crypto/decrypt
+         (codecs/hex->bytes convertpixels)
+         saltedpass
+         iv
+         {:algorithm :aes128-cbc-hmac-sha256})
+        (codecs/bytes->str))))
 
 (defn decryptimg [componentState]
   (let [{:keys [startingimg password]} componentState
@@ -33,17 +36,16 @@
 
 (defn encryptimg [componentState]
   (let [{:keys [startingimg message password]} componentState
-        buddyConfig (crypto/block-cipher :twofish :cbc)]
-    (def original-text
-      (codecs/to-bytes message))
-
-    (def saltedpass (hash/sha256 password))
-    (def encryptedhex  (codecs/bytes->hex (crypto/encrypt original-text saltedpass iv
-                                                          {:algorithm :aes128-cbc-hmac-sha256})))
-    (def inlenin (imgcore/load-image startingimg))
-    (def pixels (imgcore/get-pixels inlenin))
-    (def encryptedintegers (map int encryptedhex))
-    (def pixelstostore  (count encryptedintegers))
+        buddyConfig (crypto/block-cipher :twofish :cbc)
+        original-text (codecs/to-bytes message)
+        saltedpass (hash/sha256 password)
+        encryptedhex (codecs/bytes->hex (crypto/encrypt
+                                         original-text saltedpass iv
+                                         {:algorithm :aes128-cbc-hmac-sha256}))
+        inlenin (imgcore/load-image startingimg)
+        pixels (imgcore/get-pixels inlenin)
+        encryptedintegers (map int encryptedhex)
+        pixelstostore (count encryptedintegers)]
     (dotimes [i (inc pixelstostore)]
       (if (= i pixelstostore)
         (aset pixels i -9588211)
@@ -67,17 +69,15 @@
 (defn loadimginit [config]
   (map->LOADCOMP {:config config}))
 
-
-
 ;;show-image component & init fn
-
-
 (defrecord SHOWCOMP [config]
   component/Lifecycle
   (start [this]
 ;;rewrite path as comp dependency todo
     (when-not (:decrypt (:config this))
-      (imgcore/save (:processedimg (:loadimg this)) (str (:startingimg (:config this)) ".enc.png")))
+      (imgcore/save
+       (:processedimg (:loadimg this))
+       (str (:startingimg (:config this)) ".enc.png")))
     (assoc this :finished true))
   (stop [this]
     this))
@@ -85,12 +85,7 @@
 (defn showimginit [config]
   (map->SHOWCOMP {:config config}))
 
-
-
-
 ;;production configs
-
-
 (defn prod-system [config]
   (component/system-map
    :loadimg (loadimginit config)
@@ -110,14 +105,9 @@
 (defn -main [& args]
   (let [{:keys [image decrypt message password]}
         (:options (parse-opts args cli-options))]
-
-    (if image
+    (if (some? image)
       (component/start (prod-system {:startingimg image
                                      :message message
                                      :password password
                                      :decrypt decrypt}))
-      (println
-
-       "You have to specify the host .png path with -i /path/to/img"))))
-
-
+      (println "You have to specify the host .png path with -i /path/to/img"))))
